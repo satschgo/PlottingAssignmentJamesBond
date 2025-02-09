@@ -223,4 +223,8 @@ Prime time for catching a Sasquatch seems to be year 2000 in Oregon - rise of me
 
 
 
+```{r}
+sessionInfo()
+
+```
 
