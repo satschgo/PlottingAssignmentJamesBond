@@ -1,0 +1,226 @@
+---
+title: "Plotting Assignment - The indulgences of different James Bonds"
+author: "Sarah Guido"
+date: "2025-02-09"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+# set knit options
+knitr::opts_chunk$set(message = FALSE,
+                      warning = FALSE)
+
+```
+
+```{r}
+### Load necessary packages ###
+
+#devtools::install_github("matthewbjane/ThemePark")
+library(ThemePark)
+#install.packages(ggplot2)
+#install.packages(readr)
+#install.packages(dplyr)
+#install.packages(tidyr)
+
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(tidyr)
+```
+
+# James Bond Plots
+
+
+## The Good Plot
+
+```{r}
+### Good Plot ###
+
+
+#Load data file
+JamesBonddata <- read_csv("../data/JamesBonddata.csv", show_col_types = FALSE, 
+    skip = 1)
+#View(JamesBonddata)
+
+
+##Wrangling##
+#Ensure variable 'Year' is numeric
+JamesBonddata$Year <- as.numeric(JamesBonddata$Year)
+
+#Determine first appearance of each Bond actor
+Bond_order <- JamesBonddata %>%
+  group_by(Bond) %>%
+  summarise(First_Year = min(Year, na.rm = TRUE)) %>%
+  arrange(First_Year) %>%
+  pull(Bond)
+
+#Select relevant columns & compute mean values per movie
+JamesBonddata_selected <- JamesBonddata %>%
+  select(Bond, Martinis, Conquests) %>%
+  group_by(Bond) %>%
+  summarise(
+    Mean_Martinis = mean(as.numeric(Martinis), na.rm = TRUE),
+    Mean_Conquests = mean(as.numeric(Conquests), na.rm = TRUE)) %>%
+  pivot_longer(cols = c(Mean_Martinis, Mean_Conquests), 
+               names_to = "Category", 
+               values_to = "Mean_Count") %>%
+  mutate(Bond = factor(Bond, levels = Bond_order))
+
+
+##Plotting##
+#Create plot
+good_plot <- ggplot(JamesBonddata_selected, aes(x = Bond, y = Mean_Count, fill = Category)) +
+  geom_bar(stat = "identity", position = "dodge") +
+  scale_fill_manual(values = c("Mean_Martinis" = "#080a87",  
+                               "Mean_Conquests" = "#e69419")) +  
+  scale_y_continuous(breaks = seq(0, max(JamesBonddata_selected$Mean_Count, na.rm = TRUE), by = 0.5)) +
+  labs(
+    title = "Average Bond Indulgences per Movie",
+    subtitle = "Martinis and Conquests per Actor",
+    x = "Bond Actor",
+    y = "Average per Movie") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+#Show plot
+good_plot
+
+```
+
+
+The initial objective was to understand whether there are any James Bonds who embody the 'bad boy' persona. Surprisingly, the womanizers don't drink significantly more alcohol, presumably to keep their game up. Daniel Craig is inclined to a happy hour (shaken, not stirred), whereas George Lazenby made the most of his time being a one-time Bond. There seems to be a trend of more Martinis, less time for conquests. 
+
+
+**Pros of this plot**: Very clear, neat and organized. Accessible colors. Bonds are named in order by appearance. Shows differences quite well: allows for direct comparison between Bonds and indulgences within a Bond.
+
+**Cons of this plot**: Possibly a bit boring. It can also be difficult to track the specific number of Martinis or conquests from the bar back to the Average per Movie.
+
+
+
+
+
+## The Bad Plot
+
+```{r}
+### Bad Plot ###
+
+##Wrangling##
+#Compute mean values per movie for each Bond actor
+JamesBonddata_mean <- JamesBonddata %>%
+  group_by(Bond) %>%
+  summarise(
+    Mean_Conquests = mean(as.numeric(Conquests), na.rm = TRUE),
+    Mean_Martinis = mean(as.numeric(Martinis), na.rm = TRUE))
+
+##Plotting##
+#Create plot 
+bad_plot <- ggplot(JamesBonddata_mean, aes(x = Mean_Conquests, y = Bond, size = Mean_Martinis, color = Mean_Martinis)) +
+  geom_point(alpha = 0.8) +  
+  scale_color_gradient(low = "yellow", high = "magenta") +  
+  scale_size(range = c(3, 15)) +  #(bubble sizes)
+  theme_minimal(base_size = 14) +  
+  theme(
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank(),
+    plot.background = element_rect(fill = "orange", color = NA),  
+    panel.background = element_rect(fill = "purple"),  
+    axis.text = element_text(color = "blue", face = "bold", size = 14),
+    axis.title = element_text(color = "red", face = "italic", size = 16)) +
+  labs(
+    title = "James Bond: Mean Conquests vs. Mean Martinis",
+    x = "Average Conquests per Movie",
+    y = "Bond Actor",
+    color = "Mean Martinis",
+    size = "Mean Martinis")
+
+#Show plot
+bad_plot
+
+```
+
+
+This is a Plot dedicated to George Lazenby as James Bond, going crazy just like this plot, but for women in the late 60s. With a subtle psychedelic theme, it reminds of us the swinging sixties.
+
+**Pros of this plot**: Something fresh to the eye.
+
+**Cons of this plot**: The Bonds are not named in order of appearance. Too many colors, Number of conquests is absolutely not clear. Number of Martinis is shown by size and by color. Both scales (Martinis & Conquests) don't entail the maximum number of conquests or Martinis. Conquests vs. Martinis, but it's not possible to compare them to each other. 
+
+
+
+## Bonus Fun Fact Plot - Sasquatch Sightings
+
+```{r}
+### Fun Fact Plot ###
+
+#Top 5 states in the USA with most sightings of Sasquatch. For interest in spotting Bigfoot/Sasquatch, possibly to join James Bond hunting on a free weekend.
+
+#Load data file
+SasquatchData <- read_csv("../data/SasquatchData.csv", show_col_types = FALSE, 
+    skip = 2)
+#View(SasquatchData)
+
+
+##Wrangling##
+#Remove rows with NA or NaN values 
+SasquatchData_clean <- SasquatchData %>%
+  filter(!is.na(Year) & !is.na(State))
+
+#Replace spaces with underscores
+colnames(SasquatchData) <- gsub(" ", "_", colnames(SasquatchData))
+
+#Convert Year column to numeric
+SasquatchData$Year <- suppressWarnings(as.numeric(SasquatchData$Year))
+
+#Remove rows where 'Year' is NA after conversion
+SasquatchData <- SasquatchData %>%
+  filter(!is.na(Year))
+
+#Count total number of reports per state
+state_counts_all_years <- SasquatchData %>%
+  group_by(State) %>%
+  summarise(total_reports = n()) %>%
+  arrange(desc(total_reports))
+
+#Get top 5 states with most sightings
+top_5_states_all_years <- state_counts_all_years %>%
+  top_n(5, total_reports)
+
+#Filter dataset for only top 5 states
+finish_top_5 <- SasquatchData %>%
+  filter(State %in% top_5_states_all_years$State)
+
+#Left Join total reports into Top 5
+finish_top_5 <- finish_top_5 %>%
+  left_join(top_5_states_all_years, by = "State")
+
+##Plotting##
+#Create scatter plot
+plot_sasquatch_time <- ggplot(finish_top_5, aes(x = State, y = Year, color = State)) +
+  geom_jitter(alpha = 0.6, width = 0.2, size = 3) +  
+  geom_smooth(method = "lm", se = FALSE, linetype = "dashed", linewidth = 1) + 
+  
+  labs(title = "Sasquatch Sightings Over Time in Top 5 States",
+       subtitle = "Each point represents a reported sighting",
+       x = "State",
+       y = "Year of Report",
+       color = "State") +
+  theme_lordoftherings() +
+  theme(legend.position = "none",
+    plot.title = element_text(size = 17, face = "bold"),
+    plot.subtitle = element_text(size = 15)) +
+  scale_y_continuous(breaks = scales::breaks_pretty(n = 10))
+
+#Show plot
+plot_sasquatch_time
+```
+
+
+Prime time for catching a Sasquatch seems to be year 2000 in Oregon - rise of media probably exacerbated the madness. Props to the guy in Arkansas for finding out about Sasquatch in 1920. 
+
+**Pros of this plot**: Scatters look like a Sasquatch paw.
+
+**Cons of this plot**: Difficult to pinpoint exact sightings per year.
+
+
+
+
